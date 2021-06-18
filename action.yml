@@ -1,0 +1,29 @@
+name: 'git version'
+author: 'Lars Fenneberg <lf@elemental.net>'
+description: 'Generate version strings from a git repository'
+inputs:
+  tag-prefix:
+    description: >
+      Prefix for filtering git tags. Will be removed and is not part of the generated version string.
+      String after the tag prefix must follow semantic version scheme, i.e. x.y.z.
+    default: 'v'
+outputs:
+  git-branch:
+    description: 'Git branch'
+  git-tag:
+    description: 'Git tag'
+  git-ref-short:
+    description: 'Shortened git commit hash'
+  build-date:
+    description: 'Build date in ISO 8601 format'
+  version:
+    description: 'Version string similar to PEP-440'
+  image-tag:
+    description: 'Version string similar to PEP-440 usable as an container image tag'
+  release:
+    description: 'Is this a release ("true") or not ("false")?'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.tag-prefix }}
