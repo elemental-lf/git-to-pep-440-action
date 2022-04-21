@@ -33,6 +33,7 @@ declare -r TAG_PREFIX="$1"
 
 touch /tmp/.time-reference
 
+git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 cd "${GITHUB_WORKSPACE}"
 
 git_ref_short="$(git rev-parse --short HEAD)"
