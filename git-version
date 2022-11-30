@@ -38,36 +38,38 @@ cd "${GITHUB_WORKSPACE}"
 
 git_ref_short="$(git rev-parse --short HEAD)"
 echo "::debug::Setting git-ref-short to ${git_ref_short}"
-echo "::set-output name=git-ref-short::${git_ref_short}"
+echo "git-ref-short=${git_ref_short}" >>${GITHUB_OUTPUT}
 
 build_date="$(date -r /tmp/.time-reference -u +'%Y-%m-%dT%H:%M:%SZ')"
 echo "::debug::Setting build-date to ${build_date}"
-echo "::set-output name=build-date::${build_date}"
+echo "build-date=${build_date}" >>${GITHUB_OUTPUT}
 
 if [[ ${GITHUB_REF} =~ ^refs/heads/ ]]; then
   git_branch="${GITHUB_REF#refs/heads/}"
   echo "::debug::Setting git-branch to ${git_branch}"
-  echo "::set-output name=git-branch::${git_branch}"
+  echo "git-branch=${git_branch}" >>${GITHUB_OUTPUT}
 else
   echo "::debug::Git reference does not point to a branch."
-  echo "::set-output name=git-branch::"
+  echo "git-branch=" >>${GITHUB_OUTPUT}
 fi
 
 if [[ ${GITHUB_REF} =~ ^refs/tags/ ]]; then
   git_tag="${GITHUB_REF#refs/tags/}"
   echo "::debug::Setting git-tag to ${git_tag}"
-  echo "::set-output name=git-tag::${git_tag}"
+  echo "git-tag=${git_tag}" >>${GITHUB_OUTPUT}
 else
   echo "::debug::Git reference does not point to a tag."
-  echo "::set-output name=git-tag::"
+  echo "git-tag=" >>${GITHUB_OUTPUT}
 fi
 
 git_describe="$(git describe --long --tags --match "$TAG_PREFIX"'[0-9]*.[0-9]*.[0-9]*' --dirty=-d$(date -r /tmp/.time-reference +'%Y%m%d%H%M%S') 2>/dev/null)"
 if [[ ! $git_describe ]]; then
   echo "::debug::Unable to determine version information from git describe. Probably the initial tag is missing."
-  echo "::set-output name=version::"
-  echo "::set-output name=image-tag::"
-  echo "::set-output name=release::false"
+	cat >>${GITHUB_OUTPUT} <<-EOF
+		version=
+		image-tag=
+		release=false
+	EOF
   exit 0
 fi
 
@@ -85,9 +87,11 @@ if [[ $git_describe =~ ^${TAG_PREFIX}?(.+)-([0-9]+)-(g[0-9a-f]+)(-(d.+))?$ ]]; t
 else
   echo "::debug::Unable to parse output from git describe."
   echo "::debug::git describe returned: ${git_describe}"
-  echo "::set-output name=version::"
-  echo "::set-output name=image-tag::"
-  echo "::set-output name=release::false"
+	cat >>${GITHUB_OUTPUT} <<-EOF
+		version=
+		image-tag=
+		release=false
+	EOF
   exit 0
 fi
 
@@ -95,13 +99,17 @@ fi
 
 if [[ $git_describe_distance == 0 ]]; then
   if [[ $git_describe_dirty ]]; then
-    echo "::set-output name=version::${git_describe_tag}+${git_describe_dirty}"
-    echo "::set-output name=image-tag::${git_describe_tag}_${git_describe_dirty}"
-    echo "::set-output name=release::false"
+		cat >>${GITHUB_OUTPUT} <<-EOF
+			version=${git_describe_tag}+${git_describe_dirty}
+			image-tag=${git_describe_tag}_${git_describe_dirty}
+			release=false
+		EOF
   else
-    echo "::set-output name=version::${git_describe_tag}"
-    echo "::set-output name=image-tag::${git_describe_tag}"
-    echo "::set-output name=release::true"
+		cat >>${GITHUB_OUTPUT} <<-EOF
+			version=${git_describe_tag}
+			image-tag=${git_describe_tag}
+			release=true
+		EOF
   fi
 else
   # Increment last version number by one
@@ -110,13 +118,17 @@ else
   git_describe_tag="${git_describe_tag_array[0]}.${git_describe_tag_array[1]}.${git_describe_tag_array[2]}"
 
   if [[ $git_describe_dirty ]]; then
-    echo "::set-output name=version::${git_describe_tag}.dev${git_describe_distance}+${git_describe_commit}.${git_describe_dirty}"
-    echo "::set-output name=image-tag::${git_describe_tag}.dev${git_describe_distance}_${git_describe_commit}.${git_describe_dirty}"
-    echo "::set-output name=release::false"
+    cat >>${GITHUB_OUTPUT} <<-EOF
+			version=${git_describe_tag}.dev${git_describe_distance}+${git_describe_commit}.${git_describe_dirty}
+			image-tag=${git_describe_tag}.dev${git_describe_distance}_${git_describe_commit}.${git_describe_dirty}
+			release=false
+		EOF
   else
-    echo "::set-output name=version::${git_describe_tag}.dev${git_describe_distance}+${git_describe_commit}"
-    echo "::set-output name=image-tag::${git_describe_tag}.dev${git_describe_distance}_${git_describe_commit}"
-    echo "::set-output name=release::false"
+    cat >>${GITHUB_OUTPUT} <<-EOF
+			version=${git_describe_tag}.dev${git_describe_distance}+${git_describe_commit}
+			image-tag=${git_describe_tag}.dev${git_describe_distance}_${git_describe_commit}
+			release=false
+		EOF
   fi
 fi
 exit 0
